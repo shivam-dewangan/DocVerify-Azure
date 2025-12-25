@@ -1,4 +1,4 @@
-# Trusty Docs - Document Verification & Audit Log System
+# DocVerify - Document Verification & Audit Log System
 
 A secure document verification system that generates and stores document hashes while maintaining comprehensive audit logs using Azure services.
 
