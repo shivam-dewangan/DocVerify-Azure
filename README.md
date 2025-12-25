@@ -239,6 +239,3 @@ trusty-docs/
 └── nginx.conf
 ```
 
-## License
-
-MIT License - see LICENSE file for details.
