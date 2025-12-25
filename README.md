@@ -1,73 +1,244 @@
-# Welcome to your Lovable project
+# Trusty Docs - Document Verification & Audit Log System
 
-## Project info
+A secure document verification system that generates and stores document hashes while maintaining comprehensive audit logs using Azure services.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Document Upload**: Secure file upload with integrity verification
+- **Hash Generation**: SHA-256 hash generation for document integrity
+- **Document Verification**: Compare uploaded documents against stored hashes
+- **Audit Logging**: Comprehensive audit trail for all operations
+- **Azure Integration**: Uses Azure Blob Storage and Cosmos DB
+- **Dockerized**: Full containerization with NGINX reverse proxy
+- **CI/CD Pipeline**: GitHub Actions for automated deployment
 
-There are several ways of editing your application.
+## Architecture
 
-**Use Lovable**
+- **Frontend**: React with TypeScript and Tailwind CSS
+- **Backend**: Node.js with Express
+- **Storage**: Azure Blob Storage for documents
+- **Database**: Azure Cosmos DB for hashes and audit logs
+- **Reverse Proxy**: NGINX for routing
+- **Deployment**: Azure Container Instances + Static Web Apps
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Quick Start
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+
+- Docker & Docker Compose
+- Azure account with active subscription
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Local Development
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clone and setup**:
+   ```bash
+   git clone <repository-url>
+   cd trusty-docs
+   ```
 
-Follow these steps:
+2. **Backend setup**:
+   ```bash
+   cd backend
+   npm install
+   cp .env.example .env
+   # Configure your Azure credentials in .env
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Frontend setup**:
+   ```bash
+   cd ..
+   npm install
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Run with Docker Compose**:
+   ```bash
+   docker-compose up --build
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+5. **Access the application**:
+   - Frontend: http://localhost:8080
+   - Backend API: http://localhost:3000/api
+   - Direct Backend: http://localhost:3000
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## Azure Setup Guide
+
+### 1. Create Azure Resources
+
+#### Storage Account
+```bash
+# Create resource group
+az group create --name trusty-docs-rg --location eastus
+
+# Create storage account
+az storage account create \
+  --name trustydocsstorage \
+  --resource-group trusty-docs-rg \
+  --location eastus \
+  --sku Standard_LRS
+
+# Get connection string
+az storage account show-connection-string \
+  --name trustydocsstorage \
+  --resource-group trusty-docs-rg
 ```
 
-**Edit a file directly in GitHub**
+#### Cosmos DB
+```bash
+# Create Cosmos DB account
+az cosmosdb create \
+  --name trusty-docs-cosmos \
+  --resource-group trusty-docs-rg \
+  --default-consistency-level Session
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# Get connection details
+az cosmosdb keys list \
+  --name trusty-docs-cosmos \
+  --resource-group trusty-docs-rg
+```
 
-**Use GitHub Codespaces**
+#### Container Registry
+```bash
+# Create container registry
+az acr create \
+  --resource-group trusty-docs-rg \
+  --name trustydocsregistry \
+  --sku Basic \
+  --admin-enabled true
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 2. Environment Configuration
 
-## What technologies are used for this project?
+Update your `.env` file:
 
-This project is built with:
+```env
+# Azure Storage
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Cosmos DB
+COSMOS_ENDPOINT=https://trusty-docs-cosmos.documents.azure.com:443/
+COSMOS_KEY=your_cosmos_primary_key
+COSMOS_DATABASE_NAME=trusty-docs
+COSMOS_CONTAINER_HASHES=document-hashes
+COSMOS_CONTAINER_LOGS=audit-logs
 
-## How can I deploy this project?
+# Server
+PORT=3000
+NODE_ENV=production
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### 3. GitHub Secrets
 
-## Can I connect a custom domain to my Lovable project?
+Configure these secrets in your GitHub repository:
 
-Yes, you can!
+```
+AZURE_REGISTRY_LOGIN_SERVER=trustydocsregistry.azurecr.io
+AZURE_REGISTRY_USERNAME=trustydocsregistry
+AZURE_REGISTRY_PASSWORD=<registry_password>
+AZURE_RESOURCE_GROUP=trusty-docs-rg
+AZURE_STORAGE_CONNECTION_STRING=<storage_connection_string>
+COSMOS_ENDPOINT=<cosmos_endpoint>
+COSMOS_KEY=<cosmos_key>
+AZURE_STATIC_WEB_APPS_API_TOKEN=<static_web_apps_token>
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## API Endpoints
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Documents
+- `POST /api/documents/upload` - Upload document
+- `POST /api/documents/verify/:documentId` - Verify document
+- `GET /api/documents` - List all documents
+- `GET /api/documents/:documentId` - Get document details
+- `DELETE /api/documents/:documentId` - Delete document
+
+### Audit
+- `GET /api/audit/logs` - Get audit logs
+- `GET /api/audit/logs/:documentId` - Get document audit logs
+- `GET /api/audit/stats` - Get system statistics
+- `GET /api/audit/timeline` - Get activity timeline
+
+## Security Features
+
+- File type validation
+- File size limits (50MB)
+- Rate limiting
+- CORS protection
+- Helmet security headers
+- Input validation with Joi
+- Comprehensive audit logging
+
+## Deployment
+
+### Manual Deployment
+
+1. **Build and push images**:
+   ```bash
+   # Backend
+   docker build -t trustydocsregistry.azurecr.io/trusty-docs-backend ./backend
+   docker push trustydocsregistry.azurecr.io/trusty-docs-backend
+
+   # Frontend
+   docker build -t trustydocsregistry.azurecr.io/trusty-docs-frontend .
+   docker push trustydocsregistry.azurecr.io/trusty-docs-frontend
+   ```
+
+2. **Deploy to Azure Container Instances**:
+   ```bash
+   az container create \
+     --resource-group trusty-docs-rg \
+     --name trusty-docs-backend \
+     --image trustydocsregistry.azurecr.io/trusty-docs-backend \
+     --registry-login-server trustydocsregistry.azurecr.io \
+     --registry-username trustydocsregistry \
+     --registry-password <password> \
+     --dns-name-label trusty-docs-api \
+     --ports 3000 \
+     --environment-variables NODE_ENV=production PORT=3000 \
+     --secure-environment-variables \
+       AZURE_STORAGE_CONNECTION_STRING="<connection_string>" \
+       COSMOS_ENDPOINT="<cosmos_endpoint>" \
+       COSMOS_KEY="<cosmos_key>"
+   ```
+
+### Automated Deployment
+
+Push to `main` branch triggers automatic deployment via GitHub Actions.
+
+## Monitoring
+
+- Application logs via Winston
+- Azure Monitor integration
+- Health check endpoints
+- Audit trail in Cosmos DB
+
+## Development
+
+### Running Tests
+```bash
+# Backend tests
+cd backend && npm test
+
+# Frontend tests
+npm test
+```
+
+### Code Structure
+```
+trusty-docs/
+├── backend/
+│   ├── src/
+│   │   ├── routes/          # API routes
+│   │   ├── services/        # Azure services
+│   │   ├── utils/           # Utilities
+│   │   └── server.js        # Main server
+│   ├── Dockerfile
+│   └── package.json
+├── src/                     # Frontend React app
+├── .github/workflows/       # CI/CD pipeline
+├── docker-compose.yml
+└── nginx.conf
+```
+
+## License
+
+MIT License - see LICENSE file for details.

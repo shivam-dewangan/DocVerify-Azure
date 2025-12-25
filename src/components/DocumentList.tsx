@@ -73,8 +73,8 @@ export function DocumentList({ documents, onVerify, onDelete }: DocumentListProp
           <Card
             key={doc.id}
             className={cn(
-              'p-4 transition-all hover:shadow-md animate-fade-in cursor-pointer',
-              'hover:border-accent/20'
+              'p-4 transition-all hover:shadow-lg hover:scale-[1.02] animate-fade-in cursor-pointer neon-card duration-300',
+              'hover:border-accent/30 hover:shadow-glow'
             )}
             style={{ animationDelay: `${index * 50}ms` }}
             onClick={() => setSelectedDocument(doc)}
@@ -93,7 +93,7 @@ export function DocumentList({ documents, onVerify, onDelete }: DocumentListProp
                     <VerificationStatus status={doc.status} size="sm" />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent/20 hover:shadow-glow transition-all duration-200">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -148,7 +148,7 @@ export function DocumentList({ documents, onVerify, onDelete }: DocumentListProp
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 shrink-0"
+                    className="h-6 w-6 shrink-0 hover:bg-accent/20 hover:shadow-glow transition-all duration-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       copyHash(doc.hash);

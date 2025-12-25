@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   FileText, 
   Shield, 
@@ -8,7 +8,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Document, AuditLogEntry } from '@/types/document';
-import { mockDocuments, mockAuditLogs, generateHash } from '@/lib/mockData';
+import { apiService } from '@/services/api';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { DocumentList } from '@/components/DocumentList';
 import { AuditLog } from '@/components/AuditLog';
@@ -17,78 +17,75 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(mockAuditLogs);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleUpload = (newDocument: Document) => {
-    setDocuments(prev => [newDocument, ...prev]);
-    
-    const uploadLog: AuditLogEntry = {
-      id: crypto.randomUUID(),
-      documentId: newDocument.id,
-      documentName: newDocument.name,
-      action: 'upload',
-      performedBy: 'current.user@company.com',
-      timestamp: new Date(),
-      details: 'Document uploaded successfully',
-      ipAddress: '192.168.1.1',
-    };
-    
-    const hashLog: AuditLogEntry = {
-      id: crypto.randomUUID(),
-      documentId: newDocument.id,
-      documentName: newDocument.name,
-      action: 'hash_generated',
-      performedBy: 'system',
-      timestamp: new Date(),
-      details: 'SHA-256 hash generated',
-    };
-    
-    setAuditLogs(prev => [hashLog, uploadLog, ...prev]);
-  };
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleVerify = (id: string) => {
-    setDocuments(prev => prev.map(doc => {
-      if (doc.id === id) {
-        return { ...doc, status: 'verified', verifiedAt: new Date() };
+  const loadData = async () => {
+    try {
+      const [docsResponse, logsResponse] = await Promise.all([
+        apiService.getDocuments(),
+        apiService.getAuditLogs()
+      ]);
+      
+      if (docsResponse.success) {
+        const mappedDocs = docsResponse.documents.map(doc => ({
+          id: doc.id,
+          name: doc.fileName,
+          size: doc.size,
+          type: doc.contentType,
+          hash: doc.hash,
+          uploadedAt: new Date(doc.uploadedAt),
+          verifiedAt: new Date(doc.uploadedAt),
+          status: doc.status === 'active' ? 'verified' : 'pending'
+        }));
+        setDocuments(mappedDocs);
       }
-      return doc;
-    }));
-    
-    const doc = documents.find(d => d.id === id);
-    if (doc) {
-      const verifyLog: AuditLogEntry = {
-        id: crypto.randomUUID(),
-        documentId: id,
-        documentName: doc.name,
-        action: 'verify',
-        performedBy: 'current.user@company.com',
-        timestamp: new Date(),
-        details: 'Document integrity verified',
-        ipAddress: '192.168.1.1',
-      };
-      setAuditLogs(prev => [verifyLog, ...prev]);
-      toast.success(`${doc.name} verified successfully`);
+      
+      if (logsResponse.success) {
+        const mappedLogs = logsResponse.logs.map(log => ({
+          id: log.id,
+          documentId: log.documentId,
+          documentName: log.details?.fileName || 'Unknown',
+          action: log.action,
+          performedBy: 'system',
+          timestamp: new Date(log.timestamp),
+          details: log.result,
+          ipAddress: log.ipAddress
+        }));
+        setAuditLogs(mappedLogs);
+      }
+    } catch (error) {
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleUpload = (newDocument: Document) => {
+    setDocuments(prev => [newDocument, ...prev]);
+    loadData();
+  };
+
+  const handleVerify = async (id: string) => {
     const doc = documents.find(d => d.id === id);
-    setDocuments(prev => prev.filter(d => d.id !== id));
+    if (!doc) return;
     
-    if (doc) {
-      const deleteLog: AuditLogEntry = {
-        id: crypto.randomUUID(),
-        documentId: id,
-        documentName: doc.name,
-        action: 'delete',
-        performedBy: 'current.user@company.com',
-        timestamp: new Date(),
-        details: 'Document deleted',
-        ipAddress: '192.168.1.1',
-      };
-      setAuditLogs(prev => [deleteLog, ...prev]);
-      toast.success(`${doc.name} deleted`);
+    toast.info('Re-verification requires uploading the document again');
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await apiService.deleteDocument(id);
+      setDocuments(prev => prev.filter(d => d.id !== id));
+      toast.success('Document deleted');
+      loadData();
+    } catch (error) {
+      toast.error('Failed to delete document');
     }
   };
 
@@ -99,14 +96,25 @@ const Index = () => {
     failed: documents.filter(d => d.status === 'failed').length,
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen gradient-surface flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen gradient-surface">
+    <div className="min-h-screen flex flex-col gradient-surface">
       {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50 animate-slide-in">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <div className="gradient-primary rounded-lg p-2">
+              <div className="gradient-primary rounded-lg p-2 shadow-glow">
                 <Shield className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
@@ -115,7 +123,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center border border-accent/30">
                 <span className="text-sm font-semibold text-accent">AU</span>
               </div>
             </div>
@@ -123,9 +131,9 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         {/* Page Title */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in">
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h2>
           <p className="text-muted-foreground mt-1">
             Manage document verification and audit trails
@@ -134,35 +142,43 @@ const Index = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatsCard
-            title="Total Documents"
-            value={stats.total}
-            icon={FileText}
-            description="All uploaded documents"
-          />
-          <StatsCard
-            title="Verified"
-            value={stats.verified}
-            icon={CheckCircle2}
-            variant="success"
-            trend={{ value: 12, isPositive: true }}
-          />
-          <StatsCard
-            title="Pending"
-            value={stats.pending}
-            icon={Clock}
-            variant="warning"
-          />
-          <StatsCard
-            title="Failed"
-            value={stats.failed}
-            icon={AlertTriangle}
-            variant="default"
-          />
+          <div className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
+            <StatsCard
+              title="Total Documents"
+              value={stats.total}
+              icon={FileText}
+              description="All uploaded documents"
+            />
+          </div>
+          <div className="animate-scale-in" style={{ animationDelay: '0.2s' }}>
+            <StatsCard
+              title="Verified"
+              value={stats.verified}
+              icon={CheckCircle2}
+              variant="success"
+              trend={{ value: 12, isPositive: true }}
+            />
+          </div>
+          <div className="animate-scale-in" style={{ animationDelay: '0.3s' }}>
+            <StatsCard
+              title="Pending"
+              value={stats.pending}
+              icon={Clock}
+              variant="warning"
+            />
+          </div>
+          <div className="animate-scale-in" style={{ animationDelay: '0.4s' }}>
+            <StatsCard
+              title="Failed"
+              value={stats.failed}
+              icon={AlertTriangle}
+              variant="default"
+            />
+          </div>
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="documents" className="space-y-6">
+        <Tabs defaultValue="documents" className="space-y-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="documents" className="gap-2">
               <FileText className="w-4 h-4" />
@@ -205,16 +221,35 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/50 mt-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              © 2024 DocVerify. All documents are encrypted and securely stored.
-            </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>SHA-256 Hashing</span>
-              <span>•</span>
-              <span>Enterprise Security</span>
+      <footer className="border-t border-border/30 bg-card/80 backdrop-blur-sm animate-fade-in mt-auto">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="gradient-primary rounded-lg p-1.5 shadow-glow">
+                  <Shield className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="font-semibold text-foreground">DocVerify</span>
+              </div>
+              <p className="text-sm text-muted-foreground text-center sm:text-left">
+                © 2024 DocVerify. All documents are encrypted and securely stored.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-success animate-glow-pulse"></div>
+                <span>SHA-256 Hashing</span>
+              </div>
+              <span className="hidden sm:inline">•</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-accent animate-glow-pulse"></div>
+                <span>Enterprise Security</span>
+              </div>
+              <span className="hidden sm:inline">•</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-warning animate-glow-pulse"></div>
+                <span>Azure Cloud</span>
+              </div>
             </div>
           </div>
         </div>

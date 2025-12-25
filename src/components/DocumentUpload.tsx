@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { formatFileSize, generateHash } from '@/lib/mockData';
+import { formatFileSize } from '@/lib/mockData';
 import { Document } from '@/types/document';
+import { apiService } from '@/services/api';
 import { toast } from 'sonner';
 
 interface DocumentUploadProps {
@@ -22,7 +23,7 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
 
-  const simulateUpload = useCallback(async (file: File) => {
+  const uploadFile = useCallback(async (file: File) => {
     const uploadingFile: UploadingFile = {
       file,
       progress: 0,
@@ -31,49 +32,48 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
 
     setUploadingFiles(prev => [...prev, uploadingFile]);
 
-    // Simulate upload progress
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+    try {
       setUploadingFiles(prev =>
         prev.map(f =>
-          f.file === file ? { ...f, progress: i } : f
+          f.file === file ? { ...f, progress: 50 } : f
         )
       );
-    }
 
-    // Simulate hashing
-    setUploadingFiles(prev =>
-      prev.map(f =>
-        f.file === file ? { ...f, status: 'hashing' } : f
-      )
-    );
-    await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await apiService.uploadDocument(file);
 
-    // Complete
-    setUploadingFiles(prev =>
-      prev.map(f =>
-        f.file === file ? { ...f, status: 'complete' } : f
-      )
-    );
+      setUploadingFiles(prev =>
+        prev.map(f =>
+          f.file === file ? { ...f, status: 'hashing', progress: 80 } : f
+        )
+      );
 
-    const newDocument: Document = {
-      id: crypto.randomUUID(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      hash: generateHash(),
-      uploadedAt: new Date(),
-      verifiedAt: new Date(),
-      status: 'verified',
-    };
+      setUploadingFiles(prev =>
+        prev.map(f =>
+          f.file === file ? { ...f, status: 'complete', progress: 100 } : f
+        )
+      );
 
-    onUpload(newDocument);
-    toast.success(`${file.name} uploaded and verified`);
+      const newDocument: Document = {
+        id: response.documentId,
+        name: response.fileName,
+        size: response.size,
+        type: file.type,
+        hash: response.hash,
+        uploadedAt: new Date(response.uploadedAt),
+        verifiedAt: new Date(response.uploadedAt),
+        status: 'verified',
+      };
 
-    // Remove from uploading list after animation
-    setTimeout(() => {
+      onUpload(newDocument);
+      toast.success(`${file.name} uploaded and verified`);
+
+      setTimeout(() => {
+        setUploadingFiles(prev => prev.filter(f => f.file !== file));
+      }, 1000);
+    } catch (error) {
+      toast.error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUploadingFiles(prev => prev.filter(f => f.file !== file));
-    }, 1000);
+    }
   }, [onUpload]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -81,14 +81,14 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    files.forEach(file => simulateUpload(file));
-  }, [simulateUpload]);
+    files.forEach(file => uploadFile(file));
+  }, [uploadFile]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    files.forEach(file => simulateUpload(file));
+    files.forEach(file => uploadFile(file));
     e.target.value = '';
-  }, [simulateUpload]);
+  }, [uploadFile]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -104,10 +104,10 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
     <div className="space-y-4">
       <Card
         className={cn(
-          'relative border-2 border-dashed transition-all duration-200 cursor-pointer',
+          'relative border-2 border-dashed transition-all duration-300 cursor-pointer neon-card',
           isDragging
-            ? 'border-accent bg-accent/5 scale-[1.01]'
-            : 'border-border hover:border-accent/50 hover:bg-muted/50'
+            ? 'border-accent bg-accent/10 scale-[1.02] shadow-neon'
+            : 'border-border hover:border-accent/50 hover:bg-muted/50 hover:shadow-glow'
         )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -119,23 +119,23 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
           onChange={handleFileSelect}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
-        <div className="flex flex-col items-center justify-center py-12 px-6">
+        <div className="flex flex-col items-center justify-center py-8 px-4">
           <div className={cn(
-            'rounded-full p-4 mb-4 transition-colors',
-            isDragging ? 'bg-accent/10' : 'bg-muted'
+            'rounded-full p-3 mb-3 transition-all duration-300 animate-float',
+            isDragging ? 'bg-accent/20 shadow-glow' : 'bg-muted'
           )}>
             <Upload className={cn(
-              'w-8 h-8 transition-colors',
-              isDragging ? 'text-accent' : 'text-muted-foreground'
+              'w-6 h-6 transition-colors duration-300',
+              isDragging ? 'text-accent animate-glow-pulse' : 'text-muted-foreground'
             )} />
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-1">
+          <h3 className="text-base font-semibold text-foreground mb-1 animate-fade-in">
             {isDragging ? 'Drop files here' : 'Upload Documents'}
           </h3>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-xs text-muted-foreground mb-3 animate-fade-in text-center">
             Drag and drop files or click to browse
           </p>
-          <Button variant="outline" size="sm" className="pointer-events-none">
+          <Button variant="outline" size="sm" className="pointer-events-none animate-scale-in text-xs">
             Select Files
           </Button>
         </div>
@@ -144,7 +144,7 @@ export function DocumentUpload({ onUpload }: DocumentUploadProps) {
       {uploadingFiles.length > 0 && (
         <div className="space-y-2">
           {uploadingFiles.map((uploadingFile, index) => (
-            <Card key={index} className="p-4 animate-fade-in">
+            <Card key={index} className="p-4 animate-slide-in neon-card" style={{ animationDelay: `${index * 100}ms` }}>
               <div className="flex items-center gap-3">
                 <div className={cn(
                   'rounded-lg p-2 transition-colors',

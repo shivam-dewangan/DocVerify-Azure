@@ -6,66 +6,6 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    --primary: 215 50% 23%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222 47% 11%;
-
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
-
-    --accent: 173 58% 39%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 160 84% 39%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 215 50% 23%;
-
-    --radius: 0.75rem;
-
-    /* Custom design tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(215 50% 23%) 0%, hsl(215 50% 35%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(173 58% 39%) 0%, hsl(173 58% 50%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(210 20% 98%) 0%, hsl(210 20% 95%) 100%);
-    
-    --shadow-sm: 0 1px 2px 0 hsl(215 50% 23% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 50% 23% / 0.1), 0 2px 4px -2px hsl(215 50% 23% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(215 50% 23% / 0.1), 0 4px 6px -4px hsl(215 50% 23% / 0.1);
-    --shadow-glow: 0 0 20px hsl(173 58% 39% / 0.3);
-
-    --font-mono: 'IBM Plex Mono', monospace;
-    --font-sans: 'Inter', system-ui, sans-serif;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
     --background: 222 47% 8%;
     --foreground: 210 40% 98%;
 
@@ -87,7 +27,7 @@
     --accent: 173 58% 39%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 31%;
+    --destructive: 0 63% 50%;
     --destructive-foreground: 210 40% 98%;
 
     --success: 160 84% 39%;
@@ -99,6 +39,23 @@
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 173 58% 45%;
+
+    --radius: 0.75rem;
+
+    /* Dark theme gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(173 58% 45%) 0%, hsl(173 58% 35%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(173 58% 39%) 0%, hsl(173 58% 50%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 6%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(222 47% 13%) 100%);
+    
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5), 0 4px 6px -4px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 30px hsl(173 58% 39% / 0.4);
+    --shadow-neon: 0 0 20px hsl(173 58% 39% / 0.6), 0 0 40px hsl(173 58% 39% / 0.3);
+
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-sans: 'Inter', system-ui, sans-serif;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -119,6 +76,8 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: var(--font-sans);
+    background: var(--gradient-surface);
+    min-height: 100vh;
   }
 
   .font-mono {
@@ -130,22 +89,33 @@
   .glass-card {
     @apply bg-card/80 backdrop-blur-sm border border-border/50;
     box-shadow: var(--shadow-md);
+    background: var(--gradient-card);
+  }
+
+  .neon-card {
+    @apply bg-card border border-accent/20;
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-glow);
   }
 
   .hash-display {
-    @apply font-mono text-xs tracking-tight bg-muted px-2 py-1 rounded break-all;
+    @apply font-mono text-xs tracking-tight bg-muted/50 px-3 py-2 rounded-lg break-all border border-border/30;
+    background: linear-gradient(135deg, hsl(217 33% 17%) 0%, hsl(217 33% 20%) 100%);
   }
 
   .status-verified {
-    @apply bg-success/10 text-success border-success/20;
+    @apply bg-success/20 text-success border-success/30;
+    box-shadow: 0 0 10px hsl(160 84% 39% / 0.3);
   }
 
   .status-pending {
-    @apply bg-warning/10 text-warning border-warning/20;
+    @apply bg-warning/20 text-warning border-warning/30;
+    box-shadow: 0 0 10px hsl(38 92% 50% / 0.3);
   }
 
   .status-failed {
-    @apply bg-destructive/10 text-destructive border-destructive/20;
+    @apply bg-destructive/20 text-destructive border-destructive/30;
+    box-shadow: 0 0 10px hsl(0 63% 50% / 0.3);
   }
 }
 
@@ -183,5 +153,118 @@
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px hsl(173 58% 39% / 0.3);
+  }
+  100% {
+    box-shadow: 0 0 20px hsl(173 58% 39% / 0.6), 0 0 30px hsl(173 58% 39% / 0.4);
+  }
+}
+
+@keyframes card-glow {
+  0% {
+    box-shadow: 0 0 10px hsl(173 58% 39% / 0.2);
+  }
+  100% {
+    box-shadow: 0 0 25px hsl(173 58% 39% / 0.4), 0 0 40px hsl(173 58% 39% / 0.2);
+  }
+}
+
+@keyframes border-glow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes bounce-glow {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 10px hsl(173 58% 39% / 0.3);
+  }
+  50% {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px hsl(173 58% 39% / 0.5);
+  }
+}
+
+@keyframes pulse-neon {
+  0% {
+    box-shadow: 0 0 5px hsl(173 58% 39% / 0.4);
+    border-color: hsl(173 58% 39% / 0.3);
+  }
+  100% {
+    box-shadow: 0 0 20px hsl(173 58% 39% / 0.8), 0 0 30px hsl(173 58% 39% / 0.4);
+    border-color: hsl(173 58% 39% / 0.6);
+  }
+}
+
+@keyframes float-bg {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate(50px, -30px) rotate(90deg) scale(1.1);
+  }
+  50% {
+    transform: translate(-30px, 40px) rotate(180deg) scale(0.9);
+  }
+  75% {
+    transform: translate(40px, 20px) rotate(270deg) scale(1.05);
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes particles {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) rotate(360deg);
+    opacity: 0;
   }
 }
