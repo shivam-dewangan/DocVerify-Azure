@@ -238,4 +238,5 @@ trusty-docs/
 ├── docker-compose.yml
 └── nginx.conf
 ```
+![Project Screenshot](public/Screenshot%202025-12-25%20at%2020.01.00.png)
 
