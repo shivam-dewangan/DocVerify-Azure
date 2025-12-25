@@ -240,3 +240,9 @@ trusty-docs/
 ```
 ![Project Screenshot](public/Screenshot%202025-12-25%20at%2020.01.00.png)
 
+
+## 🔗 Live Demo
+
+[🚀 View Live Application](https://docverify-azure.onrender.com)
+
+
